@@ -1,21 +1,83 @@
 import { TrackerData, Goal } from './types';
 
-const KV_KEY = 'learning-tracker:goals';
-
 const DEFAULT_DATA: TrackerData = {
   users: ['', ''],
   goals: [],
 };
 
-const isKVConfigured = () => {
-  return process.env.KV_REST_API_URL || process.env.REDIS_URL;
-};
+// GitHub Gist storage
+const GIST_API = 'https://api.github.com';
 
-// Local storage fallback for development
+function getGithubToken(): string | undefined {
+  return process.env.GITHUB_PAT;
+}
+
+function getGistId(): string | undefined {
+  return process.env.GIST_ID;
+}
+
+async function fetchGist(): Promise<TrackerData> {
+  const token = getGithubToken();
+  const gistId = getGistId();
+
+  if (!token || !gistId) {
+    return getLocalData();
+  }
+
+  try {
+    const res = await fetch(`${GIST_API}/gists/${gistId}`, {
+      headers: { Authorization: `token ${token}` },
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) throw new Error('Failed to fetch gist');
+
+    const gist = await res.json();
+    const content = gist.files['learning-tracker.json']?.content;
+
+    if (!content) return DEFAULT_DATA;
+    return JSON.parse(content) as TrackerData;
+  } catch (error) {
+    console.error('Failed to read from Gist:', error);
+    return getLocalData();
+  }
+}
+
+async function updateGist(data: TrackerData): Promise<void> {
+  const token = getGithubToken();
+  const gistId = getGistId();
+
+  if (!token || !gistId) {
+    setLocalData(data);
+    return;
+  }
+
+  try {
+    await fetch(`${GIST_API}/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `token ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files: {
+          'learning-tracker.json': {
+            content: JSON.stringify(data, null, 2),
+          },
+        },
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to update Gist:', error);
+    setLocalData(data);
+  }
+}
+
+// Local storage fallback
 function getLocalData(): TrackerData {
   if (typeof window === 'undefined') return DEFAULT_DATA;
   try {
-    const data = localStorage.getItem(KV_KEY);
+    const data = localStorage.getItem('learning-tracker:data');
     return data ? JSON.parse(data) : DEFAULT_DATA;
   } catch {
     return DEFAULT_DATA;
@@ -24,32 +86,19 @@ function getLocalData(): TrackerData {
 
 function setLocalData(data: TrackerData): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(KV_KEY, JSON.stringify(data));
+  localStorage.setItem('learning-tracker:data', JSON.stringify(data));
 }
 
 export async function getData(): Promise<TrackerData> {
-  if (isKVConfigured()) {
-    try {
-      const { kv } = await import('@vercel/kv');
-      const data = await kv.get<TrackerData>(KV_KEY);
-      return data || DEFAULT_DATA;
-    } catch (error) {
-      console.error('Failed to read from KV, falling back to localStorage:', error);
-      return getLocalData();
-    }
+  if (getGithubToken() && getGistId()) {
+    return fetchGist();
   }
   return getLocalData();
 }
 
 export async function setData(data: TrackerData): Promise<void> {
-  if (isKVConfigured()) {
-    try {
-      const { kv } = await import('@vercel/kv');
-      await kv.set(KV_KEY, data);
-    } catch (error) {
-      console.error('Failed to write to KV, falling back to localStorage:', error);
-      setLocalData(data);
-    }
+  if (getGithubToken() && getGistId()) {
+    await updateGist(data);
   } else {
     setLocalData(data);
   }

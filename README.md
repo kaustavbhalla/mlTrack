@@ -13,7 +13,7 @@ A minimal two-person accountability tool for ML/DL/AI/Agents learning. Set weekl
 ## Tech Stack
 
 - **Frontend**: Next.js 14 + React 18 + Tailwind CSS
-- **Storage**: Vercel KV (serverless Redis)
+- **Storage**: GitHub Gist (free, private JSON file)
 - **Deployment**: Vercel (one-click deploy)
 
 ## Quick Start
@@ -26,16 +26,26 @@ cd weekly-learning-tracker
 npm install
 ```
 
-### 2. Set Up Vercel KV
+### 2. Set Up GitHub Gist (Free Storage)
 
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Create a new project or select existing
-3. Go to **Storage** tab → **Create Database** → **KV**
-4. Copy the connection details
+**Step 1: Create a Personal Access Token**
+1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens)
+2. Click **Generate new token (classic)**
+3. Give it a name (e.g., "learning-tracker")
+4. Select scope: **gist** (only this one)
+5. Click **Generate token** and copy it
+
+**Step 2: Create a Private Gist**
+1. Go to [gist.github.com](https://gist.github.com)
+2. Create a new **private** Gist
+3. Filename: `learning-tracker.json`
+4. Content: `{"users":["",""],"goals":[]}`
+5. Click **Create secret gist**
+6. Copy the Gist ID from the URL: `https://gist.github.com/username/`**THIS_PART**
 
 ### 3. Configure Environment
 
-Copy `.env.local.example` to `.env.local` and add your KV credentials:
+Copy `.env.local.example` to `.env.local` and add your credentials:
 
 ```bash
 cp .env.local.example .env.local
@@ -43,8 +53,8 @@ cp .env.local.example .env.local
 
 Edit `.env.local`:
 ```
-KV_REST_API_URL=https://your-kv-url
-KV_REST_API_TOKEN=your-kv-token
+GITHUB_PAT=ghp_xxxxxxxxxxxx
+GIST_ID=abc123def456
 ```
 
 ### 4. Run Locally
@@ -63,6 +73,8 @@ npx vercel
 
 Or connect your GitHub repo to Vercel for automatic deployments.
 
+**Important:** Add the same env vars in Vercel dashboard → Settings → Environment Variables.
+
 ## Usage
 
 1. **First Visit**: Enter both users' names
@@ -79,7 +91,7 @@ Or connect your GitHub repo to Vercel for automatic deployments.
 
 ## Data Structure
 
-All data is stored as a single JSON blob in Vercel KV:
+All data is stored as a JSON file in your private GitHub Gist:
 
 ```typescript
 {

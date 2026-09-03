@@ -8,7 +8,7 @@ const DEFAULT_DATA: TrackerData = {
 };
 
 const isKVConfigured = () => {
-  return process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN;
+  return process.env.KV_REST_API_URL || process.env.REDIS_URL;
 };
 
 // Local storage fallback for development

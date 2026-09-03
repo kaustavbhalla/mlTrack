@@ -5,7 +5,6 @@ const DEFAULT_DATA: TrackerData = {
   goals: [],
 };
 
-// GitHub Gist storage
 const GIST_API = 'https://api.github.com';
 
 function getGithubToken(): string | undefined {
@@ -21,21 +20,29 @@ async function fetchGist(): Promise<TrackerData> {
   const gistId = getGistId();
 
   if (!token || !gistId) {
+    console.log('GitHub credentials not configured, using localStorage');
     return getLocalData();
   }
 
   try {
     const res = await fetch(`${GIST_API}/gists/${gistId}`, {
       headers: { Authorization: `token ${token}` },
-      next: { revalidate: 0 },
     });
 
-    if (!res.ok) throw new Error('Failed to fetch gist');
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('GitHub API error:', res.status, err);
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
 
     const gist = await res.json();
     const content = gist.files['learning-tracker.json']?.content;
 
-    if (!content) return DEFAULT_DATA;
+    if (!content) {
+      console.log('No learning-tracker.json file in gist, using empty data');
+      return DEFAULT_DATA;
+    }
+
     return JSON.parse(content) as TrackerData;
   } catch (error) {
     console.error('Failed to read from Gist:', error);
@@ -53,7 +60,7 @@ async function updateGist(data: TrackerData): Promise<void> {
   }
 
   try {
-    await fetch(`${GIST_API}/gists/${gistId}`, {
+    const res = await fetch(`${GIST_API}/gists/${gistId}`, {
       method: 'PATCH',
       headers: {
         Authorization: `token ${token}`,
@@ -67,6 +74,11 @@ async function updateGist(data: TrackerData): Promise<void> {
         },
       }),
     });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('Failed to update gist:', res.status, err);
+    }
   } catch (error) {
     console.error('Failed to update Gist:', error);
     setLocalData(data);

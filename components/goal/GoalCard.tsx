@@ -48,28 +48,64 @@ export function GoalCard({ goal, onUpdate, onDelete, readOnly = false, showUser 
               onChange={handleStatusChange}
               disabled={readOnly}
             />
-            <h3 className={`font-medium text-on-surface ${goal.status === 'done' ? 'line-through' : ''}`}>
-              {goal.title}
-            </h3>
+            {readOnly ? (
+              <h3 className={`font-medium text-on-surface ${goal.status === 'done' ? 'line-through' : ''}`}>
+                {goal.title}
+              </h3>
+            ) : (
+              <input
+                type="text"
+                value={goal.title}
+                onChange={(e) => onUpdate?.({ title: e.target.value })}
+                placeholder="Enter goal title..."
+                className="flex-1 font-medium text-on-surface bg-transparent border-b border-outline-variant focus:border-primary focus:outline-none py-0.5 placeholder:text-on-surface-variant/50"
+              />
+            )}
           </div>
 
-          {goal.description && (
-            <p className="text-sm text-on-surface-variant ml-7 mb-2">{goal.description}</p>
+          {!readOnly && (
+            <div className="ml-7 mb-2">
+              <input
+                type="text"
+                value={goal.description || ''}
+                onChange={(e) => onUpdate?.({ description: e.target.value })}
+                placeholder="Add description (optional)"
+                className="w-full text-sm text-on-surface-variant bg-transparent border-b border-outline-variant focus:border-primary focus:outline-none py-0.5 placeholder:text-on-surface-variant/50"
+              />
+            </div>
           )}
 
-          {goal.link && (
-            <a
-              href={goal.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline ml-7 block mb-2 truncate"
-            >
-              {goal.link}
-            </a>
+          {!readOnly && (
+            <div className="ml-7 mb-2">
+              <input
+                type="url"
+                value={goal.link || ''}
+                onChange={(e) => onUpdate?.({ link: e.target.value })}
+                placeholder="Add link (optional)"
+                className="w-full text-sm text-primary bg-transparent border-b border-outline-variant focus:border-primary focus:outline-none py-0.5 placeholder:text-on-surface-variant/50"
+              />
+            </div>
           )}
 
           <div className="flex flex-wrap items-center gap-2 ml-7">
-            <Badge category={goal.category} />
+            {readOnly ? (
+              <Badge category={goal.category} />
+            ) : (
+              <select
+                value={goal.category}
+                onChange={(e) => handleCategoryChange(e.target.value as Category)}
+                className="text-[11px] px-2 py-0.5 rounded-full border border-outline-variant bg-white text-on-surface-variant focus:outline-none focus:border-primary"
+                style={{
+                  backgroundColor: CATEGORY_CONFIG[goal.category].bg,
+                  color: CATEGORY_CONFIG[goal.category].text,
+                  borderColor: CATEGORY_CONFIG[goal.category].border,
+                }}
+              >
+                {CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            )}
 
             {goal.focus_hours && (
               <span className="text-xs text-on-surface-variant">{goal.focus_hours}h</span>

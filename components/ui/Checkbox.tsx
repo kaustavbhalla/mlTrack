@@ -1,21 +1,21 @@
-import { InputHTMLAttributes } from 'react';
-
-interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface CheckboxProps {
   label?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  disabled?: boolean;
+  className?: string;
 }
 
-export function Checkbox({ label, checked, onChange, className = '', ...props }: CheckboxProps) {
+export function Checkbox({ label, checked, onChange, disabled = false, className = '' }: CheckboxProps) {
   return (
-    <label className={`inline-flex items-center gap-2 cursor-pointer ${className}`}>
+    <label className={`inline-flex items-center gap-2 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
       <div className="relative">
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
+          disabled={disabled}
           className="sr-only"
-          {...props}
         />
         <div
           className={`w-[18px] h-[18px] rounded-[4px] border-[1.5px] transition-colors ${
